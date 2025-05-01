@@ -5,57 +5,109 @@ services:
     build: .
     ports:
       - "8000:8000"
+    environment:
+      - APP_ENV=development
+      - DEBUG=true
+      - DB_FALLBACK=false
+      - REDIS_FALLBACK=false
+      - CELERY_FALLBACK=false
     volumes:
       - .:/app
-    environment:
-      - ENVIRONMENT=development
-      - POSTGRES_SERVER=db
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=app
-      - REDIS_HOST=redis
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - ./logs:/app/logs
+      - ./data:/app/data
     depends_on:
-      - db
+      - postgres
       - redis
+      - celery
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
-  db:
-    image: postgres:13
+  postgres:
+    image: postgres:15-alpine
     ports:
       - "5432:5432"
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=app
+      - POSTGRES_DB=fastapi_template
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
-    image: redis:6
+    image: redis:7-alpine
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   celery:
     build: .
-    command: celery -A app.core.celery worker --loglevel=info
+    command: celery -A app.core.tasks worker --loglevel=info
+    environment:
+      - APP_ENV=development
+      - DEBUG=true
     volumes:
       - .:/app
-    environment:
-      - ENVIRONMENT=development
-      - POSTGRES_SERVER=db
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=app
-      - REDIS_HOST=redis
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
     depends_on:
-      - db
       - redis
+      - postgres
+    networks:
+      - app-network
+
+  flower:
+    image: mher/flower:1.2.0
+    ports:
+      - "5555:5555"
+    command: ["flower", "--broker=redis://redis:6379/0", "--port=5555"]
+    depends_on:
+      - redis
+      - celery
+    networks:
+      - app-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - app-network
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
 
 volumes:
   postgres_data:
-  redis_data: 
+  redis_data:
+  grafana_data: 

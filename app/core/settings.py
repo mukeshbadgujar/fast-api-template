@@ -1,6 +1,8 @@
 from typing import List, Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import AnyHttpUrl, PostgresDsn, RedisDsn, validator
+import os
+from pathlib import Path
 
 
 class Settings(BaseSettings):
@@ -30,11 +32,18 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: str
     POSTGRES_DB: str
     SQLALCHEMY_DATABASE_URI: Optional[PostgresDsn] = None
+    DB_FALLBACK: bool = False
+    SQLITE_DB_PATH: str = "sqlite:///./sql_app.db"
     
     @validator("SQLALCHEMY_DATABASE_URI", pre=True)
     def assemble_db_connection(cls, v: Optional[str], values: dict[str, any]) -> any:
         if isinstance(v, str):
             return v
+        
+        # Check if fallback is enabled
+        if values.get("DB_FALLBACK", False):
+            return values.get("SQLITE_DB_PATH")
+            
         return PostgresDsn.build(
             scheme="postgresql+asyncpg",
             username=values.get("POSTGRES_USER"),
@@ -49,11 +58,17 @@ class Settings(BaseSettings):
     REDIS_PASSWORD: Optional[str] = None
     REDIS_DB: int = 0
     REDIS_URI: Optional[RedisDsn] = None
+    REDIS_FALLBACK: bool = False
     
     @validator("REDIS_URI", pre=True)
     def assemble_redis_connection(cls, v: Optional[str], values: dict[str, any]) -> any:
         if isinstance(v, str):
             return v
+            
+        # Check if fallback is enabled
+        if values.get("REDIS_FALLBACK", False):
+            return None
+            
         return RedisDsn.build(
             scheme="redis",
             host=values.get("REDIS_HOST"),
@@ -65,6 +80,7 @@ class Settings(BaseSettings):
     # Celery
     CELERY_BROKER_URL: str
     CELERY_RESULT_BACKEND: str
+    CELERY_FALLBACK: bool = False
     
     # OpenTelemetry
     OTEL_EXPORTER_OTLP_ENDPOINT: Optional[str] = None

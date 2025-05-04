@@ -6,6 +6,10 @@ from passlib.context import CryptContext
 
 from app.core.settings import settings
 
+# Export these values for use in dependencies
+ALGORITHM = settings.ALGORITHM
+SECRET_KEY = settings.SECRET_KEY
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
@@ -24,8 +28,8 @@ def create_access_token(
     to_encode = {"exp": expire, "sub": str(subject)}
     encoded_jwt = jwt.encode(
         to_encode,
-        settings.SECRET_KEY,
-        algorithm=settings.ALGORITHM,
+        SECRET_KEY,
+        algorithm=ALGORITHM,
     )
     return encoded_jwt
 

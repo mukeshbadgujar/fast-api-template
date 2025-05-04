@@ -1,0 +1,48 @@
+from typing import List, Optional
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.domains.users.models import User
+
+
+class UserRepository:
+    """Repository for User database operations."""
+
+    def __init__(self, db: AsyncSession):
+        self.db = db
+
+    async def get(self, user_id: int) -> Optional[User]:
+        """Get a user by ID."""
+        result = await self.db.execute(select(User).where(User.id == user_id))
+        return result.scalar_one_or_none()
+
+    async def get_by_email(self, email: str) -> Optional[User]:
+        """Get a user by email."""
+        result = await self.db.execute(select(User).where(User.email == email))
+        return result.scalar_one_or_none()
+
+    async def list(self, skip: int = 0, limit: int = 100) -> List[User]:
+        """List users."""
+        result = await self.db.execute(select(User).offset(skip).limit(limit))
+        return result.scalars().all()
+
+    async def create(self, user: User) -> User:
+        """Create a new user."""
+        self.db.add(user)
+        await self.db.commit()
+        await self.db.refresh(user)
+        return user
+
+    async def update(self, user: User) -> User:
+        """Update a user."""
+        await self.db.commit()
+        await self.db.refresh(user)
+        return user
+
+    async def delete(self, user_id: int) -> None:
+        """Delete a user."""
+        user = await self.get(user_id)
+        if user:
+            await self.db.delete(user)
+            await self.db.commit() 

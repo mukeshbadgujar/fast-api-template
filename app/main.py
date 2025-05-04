@@ -6,7 +6,7 @@ import asyncio
 import logging
 
 from app.core.settings import settings
-from app.api.v1.api import api_router
+from app.api.router import api_router
 from app.core.logging import configure_logging
 from app.core.middleware import RequestLoggingMiddleware
 from app.core.tracing import configure_tracing

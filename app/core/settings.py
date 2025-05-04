@@ -12,8 +12,15 @@ class Settings(BaseSettings):
     
     # Security
     SECRET_KEY: str
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 8 days
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 11520  # 8 days
     ALGORITHM: str = "HS256"
+    
+    @validator("ACCESS_TOKEN_EXPIRE_MINUTES", pre=True)
+    def parse_token_expire_minutes(cls, v):
+        if isinstance(v, str):
+            # Remove any comments
+            return int(v.split('#')[0].strip())
+        return v
     
     # CORS
     BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []

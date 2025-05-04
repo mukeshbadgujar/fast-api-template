@@ -22,27 +22,40 @@ A production-grade FastAPI template for building scalable, maintainable, and tes
 
 ```
 fastapi-template/
-├── app/                    # Application code
-│   ├── api/               # API routes
-│   ├── core/              # Core functionality
-│   │   ├── cache.py      # Redis cache with fallback
-│   │   ├── tasks.py      # Celery tasks with fallback
-│   │   ├── settings.py   # Configuration management
-│   │   └── logging.py    # Logging configuration
-│   ├── db/                # Database models and migrations
-│   │   ├── base.py       # Base models
-│   │   ├── session.py    # Database session with fallback
-│   │   └── models/       # SQLAlchemy models
-│   ├── services/          # Business logic
-│   ├── schemas/           # Pydantic models
-│   └── utils/             # Utility functions
-├── tests/                 # Test suite
-├── docs/                  # Documentation
-├── scripts/               # Utility scripts
-├── alembic/               # Database migrations
-├── docker/                # Docker configuration
-├── prometheus.yml         # Prometheus configuration
-└── docker-compose.yml     # Service orchestration
+├── app/                       # Application code
+│   ├── main.py                # ASGI entrypoint
+│   ├── core/                  # Core functionality
+│   │   ├── settings.py        # Pydantic Settings (env)
+│   │   ├── logging.py         # Structured logging setup
+│   │   ├── security.py        # JWT, OAuth2 schemes, CORS
+│   │   ├── cache.py           # Redis cache with fallback
+│   │   ├── tasks.py           # Celery tasks with fallback
+│   │   └── events.py          # Startup/shutdown handlers
+│   ├── db/                    # Database layer
+│   │   ├── base.py            # Base model class (declarative)
+│   │   ├── session.py         # SessionLocal, engine, fallback logic
+│   │   └── migrations/        # Alembic env and versions
+│   ├── domains/               # Domain-driven subpackages
+│   │   ├── users/             # User domain package
+│   │   │   ├── router.py      # APIRouter for /users  
+│   │   │   ├── schemas.py     # Pydantic models for requests/responses
+│   │   │   ├── models.py      # SQLAlchemy definitions
+│   │   │   ├── service.py     # Business logic  
+│   │   │   ├── repository.py  # DB access abstraction  
+│   │   │   └── dependencies.py # fastapi.Depends helpers
+│   │   └── health/            # Health check domain
+│   ├── api/                   # Global API setup
+│   │   ├── deps.py            # Common dependencies  
+│   │   └── router.py          # Main router including all domains
+│   ├── middleware/            # Custom middlewares                      
+│   ├── tasks/                 # Background tasks with Celery 
+│   └── utils/                 # Shared utilities, e.g. pagination
+├── tests/                     # Test suite mirroring app structure
+├── docs/                      # Documentation
+├── scripts/                   # Utility scripts
+├── alembic/                   # Database migrations
+├── prometheus.yml             # Prometheus configuration
+└── docker-compose.yml         # Service orchestration
 ```
 
 ## Quick Start
